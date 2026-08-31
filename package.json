@@ -1,0 +1,32 @@
+{
+  "name": "xiaodan-workbench-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": ["apps/*", "packages/*"],
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "concurrently -k -n server,web -c blue,magenta \"npm run dev -w @xiaodan/server\" \"npm run dev -w @xiaodan/web\"",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "build": "npm run build -w @xiaodan/contracts && npm run build -w @xiaodan/domain && npm run build -w @xiaodan/web && npm run build -w @xiaodan/server",
+    "start": "node apps/server/dist/index.js",
+    "test:e2e": "playwright test",
+    "test:production-smoke": "node scripts/production-smoke.mjs",
+    "check:security": "node scripts/security-check.mjs",
+    "backup": "node scripts/backup.mjs",
+    "export": "node scripts/export.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.0",
+    "@types/node": "^24.3.0",
+    "@vitest/coverage-v8": "^3.2.4",
+    "concurrently": "^9.2.1",
+    "jsdom": "^26.1.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}
