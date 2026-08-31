@@ -8,7 +8,16 @@ export default defineConfig(({ mode }) => {
     base,
     plugins: [react()],
     resolve: { conditions: ['development'] },
-    build: { outDir: 'dist', emptyOutDir: true },
+    build: {
+      outDir: 'dist', emptyOutDir: true, chunkSizeWarningLimit: 550,
+      rollupOptions: { output: { manualChunks(id) {
+        if (id.includes('@codemirror') || id.includes('/codemirror/') || id.includes('@lezer')) return 'editor';
+        if (id.includes('@fullcalendar')) return 'calendar';
+        if (id.includes('@tanstack')) return 'query';
+        if (id.includes('react') || id.includes('scheduler')) return 'react';
+        return undefined;
+      } } }
+    },
     server: {
       proxy: { [`${base}api`]: 'http://127.0.0.1:3210' }
     }

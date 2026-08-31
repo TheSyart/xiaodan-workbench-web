@@ -10,9 +10,11 @@ vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
 
 describe('web shell',()=>{
   it('shows the fixed workspace navigation and warm overview',async()=>{
-    render(<App initialEntries={['/']} />);
+    const view=render(<App initialEntries={['/']} />);
     for(const label of ['今日','记账','稿件','日历','项目'])expect(screen.getByText(label)).toBeInTheDocument();
     expect(screen.getAllByText('小单').length).toBeGreaterThan(0);
     expect(await screen.findByText('把今天过清楚')).toBeInTheDocument();
+    expect(await screen.findByText('今天没有被塞满')).toBeInTheDocument();
+    view.unmount();
   });
 });

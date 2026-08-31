@@ -20,7 +20,8 @@ import {
   financeTransactionInputSchema,
   saveScriptContentSchema,
   updateProjectSchema,
-  updateScriptMetadataSchema
+  updateScriptMetadataSchema,
+  type Script
 } from '@xiaodan/contracts';
 import {
   createDatabase,
@@ -372,12 +373,30 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
 
   const assistantTools=['projects.list','projects.create','tasks.list','tasks.create','finance.list','calendar.list','scripts.search','scripts.rename','scripts.status'] as const;
   app.get(`${api}/assistant/capabilities`,async()=>({data:{tools:assistantTools,forbidden:['scripts.writeContent']}}));
-  app.post(`${api}/assistant/execute`,async(request)=>{mutationId(request);const body=request.body as {tool?:string;arguments?:unknown};
+  app.post(`${api}/assistant/execute`,async(request,reply)=>{mutationId(request);const body=request.body as {tool?:string;arguments?:unknown};
     if(!body?.tool||!assistantTools.includes(body.tool as typeof assistantTools[number]))throw new DomainError('AGENT_TOOL_NOT_ALLOWED','小单无权调用该工具；稿件正文只能在编辑器中由用户明确采纳',403);
     if(body.tool==='projects.list')return{data:projects.list(false)};if(body.tool==='tasks.list')return{data:workspace.listTasks()};
     if(body.tool==='finance.list')return{data:workspace.listTransactions()};if(body.tool==='calendar.list')return{data:[]};
     if(body.tool==='scripts.search')return{data:scripts.list({projectId:null,plannedFrom:null,plannedTo:null,includeArchived:false})};
-    throw new DomainError('AGENT_CONFIRMATION_REQUIRED','此写操作需要用户确认',409,{tool:body.tool,arguments:body.arguments});
+    const confirmationId=randomUUID();const expiresAt=new Date(Date.now()+24*60*60*1000).toISOString();const confirmation={tool:body.tool,arguments:body.arguments,expiresAt};
+    db.prepare('INSERT INTO agent_runs(id,prompt,status,response_text,confirmation_json,created_at,completed_at) VALUES(?,?,?,\'\',?,?,NULL)')
+      .run(confirmationId,body.tool,'pending_confirmation',JSON.stringify(confirmation),new Date().toISOString());
+    return reply.code(202).send({data:{requiresConfirmation:true,confirmationId,tool:body.tool,arguments:body.arguments,expiresAt}});
+  });
+  app.post<{Params:{id:string}}>(`${api}/assistant/confirm/:id`,async(request)=>{mutationId(request);
+    const row=db.prepare('SELECT status,response_text,confirmation_json FROM agent_runs WHERE id=?').get(request.params.id) as {status:string;response_text:string;confirmation_json:string}|undefined;
+    if(!row)throw new DomainError('RESOURCE_NOT_FOUND','确认动作不存在',404);
+    if(row.status==='completed')return{data:JSON.parse(row.response_text) as unknown};
+    const confirmation=JSON.parse(row.confirmation_json) as {tool:string;arguments:unknown;expiresAt:string};
+    if(new Date(confirmation.expiresAt).getTime()<Date.now()){db.prepare("UPDATE agent_runs SET status='expired',completed_at=? WHERE id=?").run(new Date().toISOString(),request.params.id);throw new DomainError('AGENT_CONFIRMATION_EXPIRED','确认已过期',409);}
+    const args=confirmation.arguments as Record<string,unknown>;let result:unknown;
+    if(confirmation.tool==='projects.create')result=projects.create(createProjectSchema.parse(args),`assistant:${request.params.id}`);
+    else if(confirmation.tool==='tasks.create')result=workspace.createTask(createTaskSchema.parse(args),`assistant:${request.params.id}`);
+    else if(confirmation.tool==='scripts.rename')result=scripts.updateMetadata(String(args.id),{title:String(args.title)},Number(args.expectedVersion),`assistant:${request.params.id}`);
+    else if(confirmation.tool==='scripts.status')result=scripts.updateMetadata(String(args.id),{status:String(args.status) as Script['status']},Number(args.expectedVersion),`assistant:${request.params.id}`);
+    else throw new DomainError('AGENT_TOOL_NOT_ALLOWED','确认动作的工具已不可用',403);
+    const response={confirmationId:request.params.id,result};db.prepare("UPDATE agent_runs SET status='completed',response_text=?,completed_at=? WHERE id=?")
+      .run(JSON.stringify(response),new Date().toISOString(),request.params.id);return{data:response};
   });
 
   const shouldServeStatic = options.serveStatic ?? process.env.NODE_ENV === 'production';

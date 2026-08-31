@@ -54,6 +54,8 @@ describe('workspace REST modules',()=>{
     expect((await app.inject({method:'GET',url:'/xiaodan/api/v1/overview/today?now=2026-08-31T08%3A00%3A00.000Z&timezone=Asia%2FShanghai'})).json().data.activeProjects).toHaveLength(1);
     expect((await app.inject({method:'GET',url:'/xiaodan/api/v1/assistant/capabilities'})).json().data.forbidden).toContain('scripts.writeContent');
     expect((await app.inject({method:'POST',url:'/xiaodan/api/v1/assistant/execute',headers:headers('a'),payload:{tool:'projects.list',arguments:{}}})).statusCode).toBe(200);
-    expect((await app.inject({method:'POST',url:'/xiaodan/api/v1/assistant/execute',headers:headers('aw'),payload:{tool:'projects.create',arguments:{name:'新项目'}}})).statusCode).toBe(409);
+    const pending=await app.inject({method:'POST',url:'/xiaodan/api/v1/assistant/execute',headers:headers('aw'),payload:{tool:'projects.create',arguments:{name:'新项目',type:'general',description:null,targetDate:null}}});expect(pending.statusCode).toBe(202);expect(pending.json().data.requiresConfirmation).toBe(true);
+    const confirmationId=pending.json().data.confirmationId;const confirmed=await app.inject({method:'POST',url:`/xiaodan/api/v1/assistant/confirm/${confirmationId}`,headers:headers('confirm'),payload:{}});expect(confirmed.statusCode).toBe(200);expect(confirmed.json().data.result.name).toBe('新项目');
+    const replay=await app.inject({method:'POST',url:`/xiaodan/api/v1/assistant/confirm/${confirmationId}`,headers:headers('confirm'),payload:{}});expect(replay.json().data.result.id).toBe(confirmed.json().data.result.id);
   });
 });
