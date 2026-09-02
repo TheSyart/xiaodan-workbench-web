@@ -8,6 +8,7 @@
 - `deploy/systemd/xiaodan-workbench.service`：非 root systemd 服务。
 - `deploy/server/xiaodan-workbench.env.example`：生产环境变量样例，不含密钥。
 - `deploy/nginx/workbench.shanchen.space.conf`：Nginx 与统一 Auth 参考；实际文件由 ServerOps 写入应用 ID 和证书路径。
+- `deploy/nginx/workbench.bootstrap-http.conf`：首次签发证书前的临时 HTTP 入口；ServerOps 接管后移除。
 
 服务器首次安装：
 
