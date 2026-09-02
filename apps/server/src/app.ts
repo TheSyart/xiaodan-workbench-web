@@ -60,6 +60,19 @@ function normalizeBasePath(value: string) {
   return `/${trimmed.replace(/^\/+|\/+$/g, '')}`;
 }
 
+function configuredOrigins(value: string | undefined): Set<string> | null {
+  if (value === undefined || value.trim() === '') return null;
+  const origins = value.split(',').map((entry) => entry.trim());
+  if (origins.some((entry) => entry === '')) throw new Error('XIAODAN_ALLOWED_ORIGINS contains an empty origin');
+  return new Set(origins.map((entry) => {
+    const parsed = new URL(entry);
+    if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password || parsed.pathname !== '/' || parsed.search || parsed.hash || entry !== parsed.origin) {
+      throw new Error('XIAODAN_ALLOWED_ORIGINS must contain canonical HTTP(S) origins');
+    }
+    return parsed.origin;
+  }));
+}
+
 function mutationId(request: FastifyRequest): string {
   const value = request.headers['idempotency-key'];
   if (!value || Array.isArray(value) || value.length > 200) throw new DomainError('IDEMPOTENCY_KEY_REQUIRED', '写请求必须携带 Idempotency-Key', 400);
@@ -151,6 +164,7 @@ function selectScope(content: string, scope: string, from: number | null, to: nu
 
 export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyInstance> {
   const basePath = normalizeBasePath(options.basePath ?? process.env.XIAODAN_BASE_PATH ?? '/xiaodan');
+  const allowedOrigins = configuredOrigins(process.env.XIAODAN_ALLOWED_ORIGINS);
   const dataDir = resolve(options.dataDir ?? process.env.XIAODAN_DATA_DIR ?? '.data');
   await mkdir(dataDir, { recursive: true });
   const dbPath = options.databasePath ?? join(dataDir, 'xiaodan.db');
@@ -180,7 +194,10 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     if (origin) {
       let parsed: URL;
       try { parsed = new URL(origin); } catch { throw new DomainError('ORIGIN_REJECTED', '请求来源无效', 403); }
-      if (!['localhost', '127.0.0.1', '::1'].includes(parsed.hostname)) throw new DomainError('ORIGIN_REJECTED', '拒绝跨来源写请求', 403);
+      const allowed = allowedOrigins
+        ? origin === parsed.origin && allowedOrigins.has(parsed.origin)
+        : origin === parsed.origin && ['localhost', '127.0.0.1', '::1'].includes(parsed.hostname);
+      if (!allowed) throw new DomainError('ORIGIN_REJECTED', '拒绝跨来源写请求', 403);
     }
   });
 

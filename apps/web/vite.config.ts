@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'XIAODAN_');
-  const base = (env.XIAODAN_BASE_PATH || '/xiaodan').replace(/\/?$/, '/');
+  const base = (process.env.XIAODAN_BASE_PATH || env.XIAODAN_BASE_PATH || '/xiaodan').replace(/\/?$/, '/');
   return {
     base,
     plugins: [react()],

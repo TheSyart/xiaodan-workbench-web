@@ -5,6 +5,21 @@ const json={'content-type':'application/json','idempotency-key':'x',origin:'http
 async function make(provider?:AiProvider){const app=await buildApp({databasePath:':memory:',dataDir:'/tmp/xiaodan-boundaries',basePath:'/xiaodan',logger:false,...(provider?{aiProvider:provider}:{})});apps.push(app);return app;}
 
 describe('HTTP boundaries',()=>{
+  it('allows configured production origins and rejects origins outside the allowlist',async()=>{
+    const previous=process.env.XIAODAN_ALLOWED_ORIGINS;
+    process.env.XIAODAN_ALLOWED_ORIGINS='https://workbench.shanchen.space';
+    try{
+      const app=await make();const payload={name:'生产项目',type:'general'};
+      const allowed=await app.inject({method:'POST',url:'/xiaodan/api/v1/projects',headers:{...json,origin:'https://workbench.shanchen.space','idempotency-key':'production-origin'},payload});
+      expect(allowed.statusCode).toBe(201);
+      const rejected=await app.inject({method:'POST',url:'/xiaodan/api/v1/projects',headers:{...json,origin:'https://other.shanchen.space','idempotency-key':'other-origin'},payload});
+      expect(rejected.statusCode).toBe(403);
+      expect(rejected.json().error.code).toBe('ORIGIN_REJECTED');
+    }finally{
+      if(previous===undefined)delete process.env.XIAODAN_ALLOWED_ORIGINS;else process.env.XIAODAN_ALLOWED_ORIGINS=previous;
+    }
+  });
+
   it('rejects cross-origin, malformed origin, invalid versions and missing resources',async()=>{const app=await make();const payload={name:'项目',type:'general'};
     expect((await app.inject({method:'POST',url:'/xiaodan/api/v1/projects',headers:{...json,origin:'https://evil.example'},payload})).json().error.code).toBe('ORIGIN_REJECTED');
     expect((await app.inject({method:'POST',url:'/xiaodan/api/v1/projects',headers:{...json,origin:'not a url'},payload})).statusCode).toBe(403);
@@ -30,4 +45,3 @@ describe('HTTP boundaries',()=>{
     const events=await app.inject({method:'GET',url:`/xiaodan/api/v1/script-ai-runs/${run.id}/events`});expect(events.statusCode).toBe(200);expect(events.body).toContain('cancelled');
   });
 });
-
