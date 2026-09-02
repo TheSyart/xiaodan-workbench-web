@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "build": {
+    "kind": "node",
+    "packageManager": "npm",
+    "install": "ci",
+    "script": "build"
+  },
+  "publish": {
+    "mode": "in_place"
+  },
+  "runtime": {
+    "kind": "systemd",
+    "unit": "xiaodan-workbench.service"
+  },
+  "health": {
+    "kind": "http",
+    "path": "/health/ready",
+    "timeoutSeconds": 5
+  }
+}

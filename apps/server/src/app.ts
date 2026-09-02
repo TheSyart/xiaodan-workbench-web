@@ -38,6 +38,7 @@ export interface BuildAppOptions {
   databasePath?: string;
   dataDir?: string;
   basePath?: string;
+  staticRoot?: string;
   logger?: boolean;
   serveStatic?: boolean;
   aiProvider?: AiProvider;
@@ -419,9 +420,9 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   const shouldServeStatic = options.serveStatic ?? process.env.NODE_ENV === 'production';
   if (shouldServeStatic) {
     const here = dirname(fileURLToPath(import.meta.url));
-    const webRoot = resolve(here, '../../web/dist');
+    const webRoot = resolve(options.staticRoot ?? resolve(here, '../../web/dist'));
     if (existsSync(webRoot)) {
-      await app.register(staticPlugin, { root: webRoot, prefix: `${basePath || '/'}/`, wildcard: false });
+      await app.register(staticPlugin, { root: webRoot, prefix: basePath ? `${basePath}/` : '/', wildcard: false });
       app.get(`${basePath}/*`, async (_request, reply) => reply.sendFile('index.html'));
       if (basePath) app.get(basePath, async (_request, reply) => reply.redirect(`${basePath}/`));
     }

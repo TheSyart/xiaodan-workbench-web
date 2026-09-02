@@ -1,4 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { buildApp } from '../src/app.js';
 
 const apps: Awaited<ReturnType<typeof buildApp>>[] = [];
@@ -20,6 +23,20 @@ const series = {
 };
 
 describe('Fastify API', () => {
+  it('serves the production web app from the root base path', async () => {
+    const staticRoot = await mkdtemp(join(tmpdir(), 'xiaodan-static-'));
+    try {
+      await writeFile(join(staticRoot, 'index.html'), '<!doctype html><title>root-workbench</title>');
+      const app = await buildApp({ databasePath: ':memory:', dataDir: '/tmp/xiaodan-workbench-root-tests', basePath: '/', logger: false, serveStatic: true, staticRoot } as Parameters<typeof buildApp>[0]);
+      apps.push(app);
+      const response = await app.inject({ method: 'GET', url: '/' });
+      expect(response.statusCode).toBe(200);
+      expect(response.body).toContain('root-workbench');
+    } finally {
+      await rm(staticRoot, { recursive: true, force: true });
+    }
+  });
+
   it('reports liveness and database-backed readiness', async () => {
     const app = await makeApp();
     expect((await app.inject({ method: 'GET', url: '/xiaodan/health/live' })).statusCode).toBe(200);
@@ -77,4 +94,3 @@ describe('Fastify API', () => {
     expect(replay.json().data.scripts.map((s: { id: string }) => s.id)).toEqual(created.json().data.scripts.map((s: { id: string }) => s.id));
   });
 });
-
