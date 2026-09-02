@@ -13,7 +13,7 @@
     "build": "npm run build -w @xiaodan/contracts && npm run build -w @xiaodan/domain && npm run build -w @xiaodan/web && npm run build -w @xiaodan/server",
     "start": "node apps/server/dist/index.js",
     "test:e2e": "playwright test",
-    "test:production-smoke": "node scripts/production-smoke.mjs",
+    "test:production-smoke": "XIAODAN_BASE_PATH=/ npm run build -w @xiaodan/web && node scripts/production-smoke.mjs",
     "check:security": "node scripts/security-check.mjs",
     "backup": "node scripts/backup.mjs",
     "export": "node scripts/export.mjs"

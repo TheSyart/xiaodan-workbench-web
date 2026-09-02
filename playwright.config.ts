@@ -14,7 +14,7 @@ export default defineConfig({
     { name: 'desktop-1024', use: { ...devices['Desktop Chrome'], viewport: { width: 1024, height: 768 } } }
   ],
   webServer: {
-    command: 'NODE_ENV=production HOST=127.0.0.1 PORT=3211 XIAODAN_BASE_PATH=/xiaodan XIAODAN_DATA_DIR=/tmp/xiaodan-playwright npm run start',
+    command: 'XIAODAN_BASE_PATH=/xiaodan npm run build -w @xiaodan/web && NODE_ENV=production HOST=127.0.0.1 PORT=3211 XIAODAN_BASE_PATH=/xiaodan XIAODAN_DATA_DIR=/tmp/xiaodan-playwright npm run start',
     url: 'http://127.0.0.1:3211/xiaodan/health/ready',
     reuseExistingServer: false,
     timeout: 20_000
