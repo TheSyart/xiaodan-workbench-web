@@ -1,0 +1,113 @@
+/* ==========================================================================
+   FullCalendar Modern Theme
+   ========================================================================== */
+.calendar-page {
+  max-width: none;
+}
+
+.calendar-paper {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.fc {
+  --fc-border-color: var(--border-subtle);
+  --fc-page-bg-color: var(--bg-surface);
+  --fc-neutral-bg-color: var(--bg-surface-subtle);
+  --fc-list-event-hover-bg-color: var(--bg-surface-subtle);
+  --fc-today-bg-color: var(--brand-primary-subtle);
+  --fc-event-bg-color: var(--brand-primary);
+  --fc-event-border-color: var(--brand-primary);
+  --fc-event-text-color: #ffffff;
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+.fc .fc-toolbar {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fc .fc-toolbar-title {
+  font-family: var(--font-writing);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.fc .fc-button {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: all var(--transition-fast);
+}
+
+.fc .fc-button-primary {
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  box-shadow: none;
+}
+
+.fc .fc-button-primary:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-medium);
+  color: var(--text-primary);
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+  background: var(--brand-primary);
+  border-color: var(--brand-primary);
+  color: #ffffff;
+}
+
+.fc .fc-col-header-cell {
+  background: var(--bg-surface-subtle);
+  padding: 10px 0;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.fc .fc-col-header-cell-cushion {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.fc .fc-timegrid-slot {
+  height: 28px;
+}
+
+.fc .fc-timegrid-slot-label-cushion {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.fc-event {
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+  font-size: 11.5px;
+  font-weight: 500;
+  box-shadow: var(--shadow-xs);
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.fc-event:hover {
+  transform: scale(1.02);
+  box-shadow: var(--shadow-sm);
+}
+
+.fc-timegrid-event .fc-event-main {
+  padding: 2px 4px;
+}
