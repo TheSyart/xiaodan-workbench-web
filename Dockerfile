@@ -16,6 +16,8 @@ COPY . .
 ENV XIAODAN_BASE_PATH=/
 RUN npm run build
 RUN npm prune --omit=dev --no-audit --no-fund
+# npm may keep version-conflicting production dependencies inside a workspace.
+RUN mkdir -p apps/server/node_modules packages/contracts/node_modules packages/domain/node_modules
 
 FROM node:24.19.0-bookworm-slim AS runtime
 WORKDIR /app
@@ -25,11 +27,14 @@ COPY --from=build /app/package.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/apps/server/package.json ./apps/server/
 COPY --from=build /app/apps/server/dist ./apps/server/dist
+COPY --from=build /app/apps/server/node_modules ./apps/server/node_modules
 COPY --from=build /app/apps/web/dist ./apps/web/dist
 COPY --from=build /app/packages/contracts/package.json ./packages/contracts/
 COPY --from=build /app/packages/contracts/dist ./packages/contracts/dist
+COPY --from=build /app/packages/contracts/node_modules ./packages/contracts/node_modules
 COPY --from=build /app/packages/domain/package.json ./packages/domain/
 COPY --from=build /app/packages/domain/dist ./packages/domain/dist
+COPY --from=build /app/packages/domain/node_modules ./packages/domain/node_modules
 RUN mkdir -p /app/data && chown node:node /app/data
 USER node
 EXPOSE 3210

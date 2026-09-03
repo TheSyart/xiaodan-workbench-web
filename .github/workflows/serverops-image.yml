@@ -60,6 +60,23 @@ jobs:
             org.opencontainers.image.source=${{ steps.source.outputs.url }}
           build-args: |
             SOURCE_COMMIT=${{ steps.source.outputs.sha }}
+      - name: Verify the published runtime starts and is ready
+        env:
+          IMAGE: ghcr.io/thesyart/xiaodan-workbench-web@${{ steps.image_web.outputs.digest }}
+        run: |
+          docker pull "$IMAGE"
+          trap 'docker rm --force serverops-runtime-smoke >/dev/null 2>&1 || true' EXIT
+          docker run --detach --name serverops-runtime-smoke --user 1000:1000 \
+            --cap-drop ALL --security-opt no-new-privileges \
+            --tmpfs /app/data:uid=1000,gid=1000,mode=0700 \
+            --publish 127.0.0.1:13210:3210 "$IMAGE"
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:13210/health/ready; then exit 0; fi
+            if [ "$(docker inspect --format '{{.State.Running}}' serverops-runtime-smoke)" != true ]; then break; fi
+            sleep 2
+          done
+          docker logs --tail 80 serverops-runtime-smoke
+          exit 1
       - name: Record trusted build proof (web)
         shell: bash
         env:
