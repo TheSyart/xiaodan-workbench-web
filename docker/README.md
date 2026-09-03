@@ -10,6 +10,18 @@ CI 工作流 `serverops-image.yml` 只构建、发布 `linux/amd64` 私有 GHCR 
 
 镜像内部固定 3210，根 URL 为 `/`；使用 `XIAODAN_DATA_DIR=/app/data`。保持代理 SSE 流、关闭缓冲；`/health/ready` 验证 SQLite 与数据目录。
 
+## 当前 ServerOps 生产映射
+
+`workbench.shanchen.space` 使用 `main`，由 Ops 的“服务 → Workbench → 代码与部署”手动更新。GitHub 推送只构建镜像，不自动切换生产。
+
+- 数据：宿主机 `/srv/serverops/data/workbench/data` → 容器 `/app/data`，UID/GID 为 `1000:1000`。
+- 环境变量：服务器 root-only `/etc/serverops/apps/xiaodan-workbench-web.env`，不放入仓库。
+- 入口：宿主机 Nginx → `127.0.0.1:3210`，保留 HTTPS 和 Ops 统一 Auth。
+- 镜像：CI 在发布证明上传前实际启动镜像并检查 `/health/ready`；保留 workspace 内局部安装的生产依赖，不能只复制根 `node_modules`。
+- 初次迁移的旧数据 `/var/lib/xiaodan-workbench` 与旧 `xiaodan-workbench.service` 保留作恢复材料，不能与容器同时写入。旧目录不是上线后的实时数据副本。
+
+点击“更新并上线”后可离开或刷新页面；以 Ops 的任务阶段、最终结果及实际线上提交为准。上线后产生了新数据时，不能直接恢复迁移前数据库，否则会丢失这些写入。人工恢复必须先停止所有写入进程并备份当前容器数据，再核对旧版本兼容性。
+
 ## 检查和启动
 
 ```sh
