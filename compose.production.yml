@@ -1,0 +1,25 @@
+# Reference only. ServerOps renders production Compose from root-approved policy.
+services:
+  web:
+    image: ${WORKBENCH_IMAGE:?Set the private GHCR image with a verified digest}
+    platform: linux/amd64
+    user: "${WORKBENCH_UID:-1000}:${WORKBENCH_GID:-1000}"
+    init: true
+    restart: unless-stopped
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    ports:
+      - "127.0.0.1:${WORKBENCH_PORT:-3210}:3210"
+    env_file:
+      - ${WORKBENCH_ENV_FILE:?Set an absolute path to the external runtime env file}
+    volumes:
+      - type: bind
+        source: ${WORKBENCH_DATA_DIR:?Set the externally managed data directory}
+        target: /app/data
+        bind:
+          create_host_path: false
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

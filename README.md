@@ -2,7 +2,7 @@
 
 本地单用户的创作与事务工作台：内容系列、每日稿件、AI 候选改写、项目任务、记账凭证和可拖拽日历。
 
-生产环境由 ServerOps 统一管理：它负责 `workbench.shanchen.space` 的 HTTPS 与登录认证、systemd 启停、运行日志、健康检查，以及从本 GitHub 仓库安全更新和失败回滚。应用本身不保存管理员账号，也不直接暴露公网端口。
+生产环境由 ServerOps 统一管理 HTTPS、登录认证、镜像发布、运行日志、健康检查与回滚。应用本身不保存管理员账号，也不直接暴露公网端口。
 
 ## 开发
 
@@ -28,4 +28,4 @@ npm run check:security
 
 ## ServerOps 部署范式
 
-仓库中的 [`.serverops/service.json`](.serverops/service.json) 是部署事实源，限定为 npm 锁定依赖安装、`build` 脚本、`xiaodan-workbench.service` 和 `/health/ready` 健康检查。`deploy/` 保存可审计的生产配置样例；密钥只写入服务器的 `/etc/xiaodan-workbench/xiaodan-workbench.env`，不得提交到 Git。
+仓库中的 [`.serverops/service.json`](.serverops/service.json) 使用 v2 镜像发布约定，声明 `web` 服务、3210 端口、`/health/ready` 和挂载到 `/app/data` 的逻辑 `data`。容器使用 `HOST=0.0.0.0`、`XIAODAN_BASE_PATH=/`、`XIAODAN_DATA_DIR=/app/data`；反向代理保持根路径、关闭 SSE 缓冲并保留长连接。镜像与外部数据的使用方式见 [容器部署说明](docker/README.md)。`deploy/` 与旧部署文档保留为 systemd 迁移参考。
